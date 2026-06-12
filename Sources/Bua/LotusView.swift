@@ -94,9 +94,9 @@ struct LotusView: View, @preconcurrency Animatable {
     private func petalLayer(_ layer: PetalLayer, journey: OKLCH, closure: Double) -> some View {
         // Layer-local closing with stagger: outer folds first
         let c = min(max((closure - layer.lagStart) / (1 - layer.lagStart), 0), 1)
-        let spread = layer.spread * (1 - c) + 5 * c
-        let petalWidth = layer.width * (1 - 0.45 * c)
-        let petalLength = layer.length * (1 - 0.15 * c)
+        let spread = layer.spread * (1 - c) + 6 * c
+        let petalWidth = layer.width * (1 - 0.38 * c)
+        let petalLength = layer.length * (1 - 0.12 * c)
         let base = journey.lighter(layer.lighten)
         let bottom = OKLCH(l: max(0, base.l - 0.06), c: base.c, h: base.h)
         let top = base.lighter(0.05)

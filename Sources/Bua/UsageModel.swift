@@ -178,6 +178,26 @@ final class UsageModel {
         }
     }
 
+    /// Snapshot/preview hooks — state is otherwise private(set).
+    func previewResting() {
+        state = .resting(.tokenExpired)
+    }
+
+    func previewBlooming(session: Double, weekly: Double) {
+        state = .blooming(UsageSnapshot(
+            fiveHour: UsageBucket(
+                utilization: session * 100,
+                resetsAt: Date().addingTimeInterval(max(0.3, (1 - session) * 5) * 3600)
+            ),
+            sevenDay: UsageBucket(
+                utilization: weekly * 100,
+                resetsAt: Date().addingTimeInterval(19 * 3600)
+            ),
+            sevenDayOpus: nil,
+            sevenDaySonnet: UsageBucket(utilization: 3, resetsAt: nil)
+        ))
+    }
+
     func refresh() async {
         let credentials = await Task.detached { KeychainReader.read() }.value
         guard let credentials else {

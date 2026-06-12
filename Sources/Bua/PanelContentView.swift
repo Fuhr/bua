@@ -15,6 +15,8 @@ private struct VisualEffectBackground: NSViewRepresentable {
 
 struct PanelContentView: View {
     var model: UsageModel
+    /// ImageRenderer can't draw NSVisualEffectView — snapshots use a solid chrome.
+    var offscreenChrome = false
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -35,9 +37,13 @@ struct PanelContentView: View {
         }
         .frame(width: Self.size.width, height: Self.size.height)
         .background {
-            ZStack {
-                VisualEffectBackground()
-                palette.panelTint
+            if offscreenChrome {
+                (scheme == .dark ? OKLCH(l: 0.16, c: 0.008, h: 80) : OKLCH(l: 0.975, c: 0.008, h: 85)).color
+            } else {
+                ZStack {
+                    VisualEffectBackground()
+                    palette.panelTint
+                }
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))

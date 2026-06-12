@@ -1,5 +1,13 @@
 import AppKit
 
+if let flagIndex = CommandLine.arguments.firstIndex(of: "--snapshot") {
+    let dir = CommandLine.arguments.indices.contains(flagIndex + 1)
+        ? CommandLine.arguments[flagIndex + 1]
+        : "/tmp/bua-snapshots"
+    Snapshot.run(outputDir: dir)
+    exit(0)
+}
+
 if CommandLine.arguments.contains("--probe") {
     let semaphore = DispatchSemaphore(value: 0)
     Task.detached {
