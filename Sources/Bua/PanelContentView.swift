@@ -180,14 +180,29 @@ struct PanelContentView: View {
     // MARK: Quote
 
     private func quoteView(_ palette: Theme.Palette) -> some View {
-        Text(model.quote)
-            .font(.system(size: 11.5))
-            .italic()
-            .foregroundStyle(palette.textSecondary)
-            .multilineTextAlignment(.center)
-            .lineLimit(3)
-            .minimumScaleFactor(0.9)
-            .padding(.horizontal, 26)
+        VStack(spacing: 3) {
+            Text(model.quote.text)
+                .font(.system(size: 11.5))
+                .italic()
+                .foregroundStyle(palette.textSecondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(4)
+                .minimumScaleFactor(0.9)
+            if let attribution = model.quote.attribution {
+                Text("— " + attribution)
+                    .font(.system(size: 10))
+                    .foregroundStyle(palette.textSecondary.opacity(0.75))
+                    .lineLimit(1)
+            }
+        }
+        .padding(.horizontal, 26)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                model.quote = Quotes.random()
+            }
+        }
+        .help("Click for another")
     }
 
     // MARK: Pin
