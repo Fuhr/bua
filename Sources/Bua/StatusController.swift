@@ -13,6 +13,7 @@ final class StatusController: NSObject {
     private var optionWasDown = false
     private var moveObserver: NSObjectProtocol?
     private var suppressMoveTracking = false
+    private var hotKey: HotKey?
 
     override init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -26,6 +27,13 @@ final class StatusController: NSObject {
         }
         model.onUpdate = { [weak self] in self?.refreshGlyph() }
         model.startPolling()
+
+        let defaults = UserDefaults.standard
+        let keyCode = defaults.object(forKey: "hotkeyKeyCode") as? UInt32 ?? HotKey.defaultKeyCode
+        let modifiers = defaults.object(forKey: "hotkeyModifiers") as? UInt32 ?? HotKey.defaultModifiers
+        hotKey = HotKey(keyCode: keyCode, modifiers: modifiers) { [weak self] in
+            Task { @MainActor [weak self] in self?.togglePanel() }
+        }
     }
 
     // MARK: Actions
@@ -38,8 +46,12 @@ final class StatusController: NSObject {
         }
     }
 
+    @objc private func togglePanelFromMenu() {
+        togglePanel()
+    }
+
     @objc private func refreshNow() {
-        Task { await model.refresh() }
+        Task { await model.refresh(force: true) }
     }
 
     @objc private func togglePin() {
@@ -82,6 +94,13 @@ final class StatusController: NSObject {
 
     private func showMenu() {
         let menu = NSMenu()
+
+        let toggle = NSMenuItem(title: "Show / Hide Lotus", action: #selector(togglePanelFromMenu), keyEquivalent: "b")
+        toggle.keyEquivalentModifierMask = [.control, .option]
+        toggle.target = self
+        menu.addItem(toggle)
+
+        menu.addItem(.separator())
 
         let refresh = NSMenuItem(title: "Refresh Now", action: #selector(refreshNow), keyEquivalent: "r")
         refresh.target = self
