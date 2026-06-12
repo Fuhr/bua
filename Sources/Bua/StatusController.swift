@@ -28,6 +28,11 @@ final class StatusController: NSObject {
         model.onUpdate = { [weak self] in self?.refreshGlyph() }
         model.startPolling()
 
+        applyHotKey()
+    }
+
+    private func applyHotKey() {
+        hotKey = nil   // deinit unregisters the old binding
         let defaults = UserDefaults.standard
         let keyCode = defaults.object(forKey: "hotkeyKeyCode") as? UInt32 ?? HotKey.defaultKeyCode
         let modifiers = defaults.object(forKey: "hotkeyModifiers") as? UInt32 ?? HotKey.defaultModifiers
@@ -90,13 +95,20 @@ final class StatusController: NSObject {
         NSWorkspace.shared.open(Quotes.fileURL)
     }
 
+    @objc private func changeShortcut() {
+        ShortcutRecorder.shared.begin { [weak self] in
+            self?.applyHotKey()
+        }
+    }
+
     // MARK: Menu
 
     private func showMenu() {
         let menu = NSMenu()
 
-        let toggle = NSMenuItem(title: "Show / Hide Lotus", action: #selector(togglePanelFromMenu), keyEquivalent: "b")
-        toggle.keyEquivalentModifierMask = [.control, .option]
+        let binding = ShortcutRecorder.currentKeyEquivalent
+        let toggle = NSMenuItem(title: "Show / Hide Lotus", action: #selector(togglePanelFromMenu), keyEquivalent: binding.key)
+        toggle.keyEquivalentModifierMask = binding.modifiers
         toggle.target = self
         menu.addItem(toggle)
 
@@ -136,6 +148,14 @@ final class StatusController: NSObject {
         let quotes = NSMenuItem(title: "Edit Quotes…", action: #selector(editQuotes), keyEquivalent: "")
         quotes.target = self
         menu.addItem(quotes)
+
+        let shortcut = NSMenuItem(
+            title: "Change Shortcut (\(ShortcutRecorder.currentDisplay))…",
+            action: #selector(changeShortcut),
+            keyEquivalent: ""
+        )
+        shortcut.target = self
+        menu.addItem(shortcut)
 
         menu.addItem(.separator())
 

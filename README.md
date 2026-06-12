@@ -11,7 +11,7 @@ twilight purple. Not failure: nightfall. When the session resets, it blooms agai
 
 | Gesture | What it does |
 |---|---|
-| **⌃⌥B** (anywhere) | Show / hide the panel — no cursor needed |
+| **⌃⌥B** (anywhere) | Show / hide the panel — no cursor needed. Rebind via right-click → Change Shortcut… |
 | Click the menu bar lotus | Show / hide the panel |
 | Pin button (or right-click → Pin) | Keep the panel floating over everything |
 | Drag the panel | It remembers the spot and reopens there |
@@ -24,12 +24,8 @@ lotus's current color), the weekly limit bar (hover for the per-model
 breakdown), and a quote.
 
 The hotkey needs no accessibility permission (Carbon `RegisterEventHotKey`).
-To rebind it:
-
-```sh
-defaults write com.sorenfuhr.bua hotkeyKeyCode -int 11      # virtual key code
-defaults write com.sorenfuhr.bua hotkeyModifiers -int 6144  # carbon mask (⌃⌥)
-```
+Rebind it via right-click → Change Shortcut… (press the new chord; esc
+cancels, ⌫ resets to ⌃⌥B).
 
 ## Quotes
 
