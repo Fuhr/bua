@@ -1,4 +1,31 @@
 import SwiftUI
+import AppKit
+
+/// Manual theme override — the panel can diverge from the system look.
+enum AppearanceChoice: String, CaseIterable {
+    case system, light, dark
+
+    var title: String {
+        switch self {
+        case .system: "System"
+        case .light: "Light"
+        case .dark: "Dark"
+        }
+    }
+
+    var nsAppearance: NSAppearance? {
+        switch self {
+        case .system: nil
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
+        }
+    }
+
+    static var current: AppearanceChoice {
+        get { AppearanceChoice(rawValue: UserDefaults.standard.string(forKey: "appearance") ?? "") ?? .system }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: "appearance") }
+    }
+}
 
 /// Benevolent design tokens, adapted for a tiny native panel.
 /// Source of truth: benevolent-pm `globals.css` — warm cream / near-black surfaces

@@ -106,6 +106,9 @@ final class UsageModel {
     }
     var demoOverride: Double?   // 0…1
 
+    /// A fresh one is picked each time the panel opens.
+    var quote: String = Quotes.random()
+
     /// Called after every state change (status-bar glyph refresh).
     var onUpdate: (() -> Void)?
 

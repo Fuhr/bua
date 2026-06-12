@@ -20,21 +20,31 @@ struct PanelContentView: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    static let size = CGSize(width: 240, height: 310)
+    static let size = CGSize(width: 240, height: 340)
 
     var body: some View {
         let palette = Theme.palette(for: scheme)
 
         VStack(spacing: 10) {
             lotus
-                .padding(.top, 18)
+                .padding(.top, 14)
             countdown(palette)
-            weeklyRow(palette)
+            VStack(spacing: 7) {
+                if model.isBlooming || model.demoOverride != nil {
+                    limitRow("session", value: model.sessionUtilization, fill: sessionFill, palette)
+                }
+                if let weekly = model.weeklyUtilization {
+                    limitRow("week", value: weekly, fill: palette.textSecondary.opacity(0.85), palette)
+                        .help(model.weeklyDetail)
+                }
+            }
             if model.demoMode {
                 demoSlider(palette)
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: 4)
+            quoteView(palette)
         }
+        .padding(.bottom, 16)
         .frame(width: Self.size.width, height: Self.size.height)
         .background {
             if offscreenChrome {
@@ -56,22 +66,27 @@ struct PanelContentView: View {
         }
     }
 
+    private var sessionFill: Color {
+        (model.isResting ? ColorJourney.resting : ColorJourney.at(model.sessionUtilization))
+            .color.opacity(0.9)
+    }
+
     // MARK: Lotus + breathing
 
     private var lotus: some View {
         Group {
             if model.panelVisible && !reduceMotion {
                 TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
-                    lotusBody(breath: sin(context.date.timeIntervalSinceReferenceDate / 8 * 2 * .pi))
+                    lotusBody(breathPhase: context.date.timeIntervalSinceReferenceDate / 7 * 2 * .pi)
                 }
             } else {
-                lotusBody(breath: 0)
+                lotusBody(breathPhase: 0)
             }
         }
     }
 
-    private func lotusBody(breath: Double) -> some View {
-        LotusView(t: model.sessionUtilization, resting: model.isResting, breath: breath)
+    private func lotusBody(breathPhase: Double) -> some View {
+        LotusView(t: model.sessionUtilization, resting: model.isResting, breathPhase: breathPhase)
             .animation(.spring(duration: 0.8), value: model.sessionUtilization)
     }
 
@@ -92,7 +107,6 @@ struct PanelContentView: View {
 
     private var primaryLine: String {
         if model.demoOverride != nil {
-            // Fabricate a countdown proportional to the scrubbed day
             return Self.remainingString((1 - model.sessionUtilization) * 5 * 3600)
         }
         if model.isResting { return "resting" }
@@ -103,13 +117,11 @@ struct PanelContentView: View {
     }
 
     private var secondaryLine: String {
-        if model.demoOverride != nil {
-            return String(format: "a day in the life · %.0f%%", model.sessionUtilization * 100)
-        }
+        if model.demoOverride != nil { return "a day in the life" }
         if let reason = model.restReason { return reason.caption }
         guard let resetsAt = model.sessionResetsAt else { return "listening for the garden" }
         if resetsAt.timeIntervalSinceNow <= 0 { return "a fresh session has begun" }
-        return "session · blooms again " + resetsAt.formatted(date: .omitted, time: .shortened)
+        return "resets " + resetsAt.formatted(date: .omitted, time: .shortened)
     }
 
     private static func remainingString(_ interval: TimeInterval) -> String {
@@ -119,33 +131,31 @@ struct PanelContentView: View {
         return h > 0 ? "\(h)h \(m)m" : "\(m)m"
     }
 
-    // MARK: Weekly bar
+    // MARK: Limit bars
 
-    @ViewBuilder
-    private func weeklyRow(_ palette: Theme.Palette) -> some View {
-        if let weekly = model.weeklyUtilization {
-            HStack(spacing: 8) {
-                Text("week")
-                    .font(.system(size: 11))
-                    .foregroundStyle(palette.textSecondary)
-                Capsule()
-                    .fill(palette.track)
-                    .frame(height: 3)
-                    .overlay(alignment: .leading) {
-                        GeometryReader { geo in
-                            Capsule()
-                                .fill(palette.textSecondary.opacity(0.85))
-                                .frame(width: max(3, geo.size.width * weekly))
-                        }
+    private func limitRow(_ label: String, value: Double, fill: Color, _ palette: Theme.Palette) -> some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .font(.system(size: 11))
+                .foregroundStyle(palette.textSecondary)
+                .frame(width: 46, alignment: .leading)
+            Capsule()
+                .fill(palette.track)
+                .frame(height: 3)
+                .overlay(alignment: .leading) {
+                    GeometryReader { geo in
+                        Capsule()
+                            .fill(fill)
+                            .frame(width: max(3, geo.size.width * value))
                     }
-                Text(String(format: "%.0f%%", weekly * 100))
-                    .font(.system(size: 11, design: .rounded))
-                    .foregroundStyle(palette.textSecondary)
-                    .monospacedDigit()
-            }
-            .padding(.horizontal, 28)
-            .help(model.weeklyDetail)
+                }
+            Text(String(format: "%.0f%%", value * 100))
+                .font(.system(size: 11, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(palette.textSecondary)
+                .frame(width: 34, alignment: .trailing)
         }
+        .padding(.horizontal, 24)
     }
 
     // MARK: Demo slider (⌥ toggles)
@@ -167,18 +177,31 @@ struct PanelContentView: View {
         .padding(.horizontal, 28)
     }
 
+    // MARK: Quote
+
+    private func quoteView(_ palette: Theme.Palette) -> some View {
+        Text(model.quote)
+            .font(.system(size: 11.5))
+            .italic()
+            .foregroundStyle(palette.textSecondary)
+            .multilineTextAlignment(.center)
+            .lineLimit(3)
+            .minimumScaleFactor(0.9)
+            .padding(.horizontal, 26)
+    }
+
     // MARK: Pin
 
     private func pinButton(_ palette: Theme.Palette) -> some View {
         Button {
             model.panelPinned.toggle()
         } label: {
-            Image(systemName: model.panelPinned ? "leaf.fill" : "leaf")
-                .font(.system(size: 12))
+            Image(systemName: model.panelPinned ? "pin.fill" : "pin")
+                .font(.system(size: 11))
                 .foregroundStyle(model.panelPinned ? Theme.sage.color : palette.textSecondary)
         }
         .buttonStyle(.plain)
         .padding(12)
-        .help(model.panelPinned ? "Unpin — closes when you click away" : "Pin — keep the lotus floating")
+        .help(model.panelPinned ? "Unpin — closes when you click away" : "Pin — keep the lotus floating on top")
     }
 }

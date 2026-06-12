@@ -16,10 +16,12 @@ enum Snapshot {
             for t in [0.0, 0.30, 0.55, 0.78, 1.0] {
                 let model = UsageModel()
                 model.previewBlooming(session: t, weekly: 0.48)
+                model.quote = "No mud, no lotus."
                 rendered.append(write(model: model, dark: dark, name: String(format: "bua-%@-%03d", dark ? "dark" : "light", Int(t * 100)), to: dir))
             }
             let resting = UsageModel()
             resting.previewResting()
+            resting.quote = "The garden grows while you sleep."
             rendered.append(write(model: resting, dark: dark, name: "bua-\(dark ? "dark" : "light")-resting", to: dir))
         }
         print(rendered.joined(separator: "\n"))

@@ -11,6 +11,8 @@ final class StatusController: NSObject {
     private var flagsMonitorLocal: Any?
     private var flagsMonitorGlobal: Any?
     private var optionWasDown = false
+    private var moveObserver: NSObjectProtocol?
+    private var suppressMoveTracking = false
 
     override init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -65,6 +67,17 @@ final class StatusController: NSObject {
         NSApp.terminate(nil)
     }
 
+    @objc private func appearanceSelected(_ sender: NSMenuItem) {
+        let choice = AppearanceChoice.allCases[sender.tag]
+        AppearanceChoice.current = choice
+        panel?.appearance = choice.nsAppearance
+    }
+
+    @objc private func editQuotes() {
+        Quotes.ensureFileExists()
+        NSWorkspace.shared.open(Quotes.fileURL)
+    }
+
     // MARK: Menu
 
     private func showMenu() {
@@ -86,6 +99,24 @@ final class StatusController: NSObject {
         demo.target = self
         demo.state = model.demoMode ? .on : .off
         menu.addItem(demo)
+
+        menu.addItem(.separator())
+
+        let appearanceItem = NSMenuItem(title: "Appearance", action: nil, keyEquivalent: "")
+        let appearanceMenu = NSMenu()
+        for (index, choice) in AppearanceChoice.allCases.enumerated() {
+            let item = NSMenuItem(title: choice.title, action: #selector(appearanceSelected(_:)), keyEquivalent: "")
+            item.target = self
+            item.tag = index
+            item.state = AppearanceChoice.current == choice ? .on : .off
+            appearanceMenu.addItem(item)
+        }
+        appearanceItem.submenu = appearanceMenu
+        menu.addItem(appearanceItem)
+
+        let quotes = NSMenuItem(title: "Edit Quotes…", action: #selector(editQuotes), keyEquivalent: "")
+        quotes.target = self
+        menu.addItem(quotes)
 
         menu.addItem(.separator())
 
@@ -118,6 +149,7 @@ final class StatusController: NSObject {
     private func showPanel() {
         let panel = self.panel ?? makePanel()
         self.panel = panel
+        model.quote = Quotes.random()
         position(panel)
         panel.orderFrontRegardless()
         model.panelVisible = true
@@ -135,10 +167,43 @@ final class StatusController: NSObject {
     private func makePanel() -> LotusPanel {
         let size = NSSize(width: PanelContentView.size.width, height: PanelContentView.size.height)
         let hosting = NSHostingView(rootView: PanelContentView(model: model))
-        return LotusPanel(contentView: hosting, size: size)
+        let panel = LotusPanel(contentView: hosting, size: size)
+        panel.appearance = AppearanceChoice.current.nsAppearance
+        // Remember where Søren drags it (observer fires synchronously on
+        // main, so the suppress flag stays valid for programmatic moves)
+        moveObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didMoveNotification, object: panel, queue: nil
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let panel = self.panel,
+                      panel.isVisible, !self.suppressMoveTracking else { return }
+                let origin = panel.frame.origin
+                let defaults = UserDefaults.standard
+                defaults.set(origin.x, forKey: "panelOriginX")
+                defaults.set(origin.y, forKey: "panelOriginY")
+                defaults.set(true, forKey: "panelHasCustomPosition")
+            }
+        }
+        return panel
     }
 
     private func position(_ panel: LotusPanel) {
+        suppressMoveTracking = true
+        defer { suppressMoveTracking = false }
+
+        let defaults = UserDefaults.standard
+        if defaults.bool(forKey: "panelHasCustomPosition") {
+            let origin = NSPoint(
+                x: defaults.double(forKey: "panelOriginX"),
+                y: defaults.double(forKey: "panelOriginY")
+            )
+            let rect = NSRect(origin: origin, size: panel.frame.size)
+            if NSScreen.screens.contains(where: { $0.visibleFrame.intersects(rect) }) {
+                panel.setFrameOrigin(origin)
+                return
+            }
+        }
+
         guard let button = statusItem.button, let window = button.window else { return }
         let buttonRect = window.convertToScreen(button.convert(button.bounds, to: nil))
         let size = panel.frame.size
