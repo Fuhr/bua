@@ -261,38 +261,71 @@ final class StatusController: NSObject {
         statusItem.button?.image = Self.glyph(openness: openness)
     }
 
-    /// A tiny five-petal lotus, drawn as a template image so it follows
-    /// the menu bar's appearance. Openness mirrors the panel lotus.
+    /// A tiny outlined lotus (stroked, not filled — reads better at 18px),
+    /// drawn as a template image so it follows the menu bar's appearance.
+    /// Same construction as the panel petals: curved spine from a steep
+    /// base tangent, pointed-ellipse width profile. Openness mirrors the
+    /// panel lotus.
     static func glyph(openness: Double) -> NSImage {
         let clamped = min(max(openness, 0), 1)
         let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
-            let base = NSPoint(x: 9, y: 3.5)
-            let spread = 8 + 56 * clamped   // half-fan in degrees
-            let petals = 5
-            let length = 11.5
-            let width = 5.2 * (0.7 + 0.3 * clamped)
-            for i in 0..<petals {
-                let f = Double(i) / Double(petals - 1)
-                let angle = -spread + 2 * spread * f
+            let base = NSPoint(x: 9, y: 2.5)
+            // (bloom tip angle, length): center petal plus two pairs
+            let specs: [(Double, Double)] = [(0, 13), (-36, 11), (36, 11), (-70, 8.5), (70, 8.5)]
+            let gather = 0.12 + 0.88 * clamped   // closed → angles fold inward
+
+            for (bloomAngle, length) in specs {
+                let angle = bloomAngle * gather
+                let baseTangent = min(max(angle * 1.5, -94), 94)
+                let halfWidth = length * 0.26
+
+                func polar(_ degrees: Double, _ r: Double) -> NSPoint {
+                    let rad = degrees * .pi / 180
+                    return NSPoint(x: sin(rad) * r, y: cos(rad) * r)   // y-up
+                }
+                let tipV = polar(angle, length)
+                let tip = NSPoint(x: base.x + tipV.x, y: base.y + tipV.y)
+                let ctrlV = polar(baseTangent, length * 0.55)
+                let ctrl = NSPoint(x: base.x + ctrlV.x, y: base.y + ctrlV.y)
+
+                func spine(_ s: Double) -> NSPoint {
+                    let u = 1 - s
+                    return NSPoint(
+                        x: u * u * base.x + 2 * u * s * ctrl.x + s * s * tip.x,
+                        y: u * u * base.y + 2 * u * s * ctrl.y + s * s * tip.y
+                    )
+                }
+                func normal(_ s: Double) -> NSPoint {
+                    let u = 1 - s
+                    let dx = 2 * u * (ctrl.x - base.x) + 2 * s * (tip.x - ctrl.x)
+                    let dy = 2 * u * (ctrl.y - base.y) + 2 * s * (tip.y - ctrl.y)
+                    let len = max((dx * dx + dy * dy).squareRoot(), 0.001)
+                    return NSPoint(x: -dy / len, y: dx / len)
+                }
+                func width(_ s: Double) -> Double {
+                    halfWidth * pow(sin(.pi * pow(s, 0.85)), 0.9)
+                }
+
+                let steps = 14
+                var left: [NSPoint] = []
+                var right: [NSPoint] = []
+                for i in 0...steps {
+                    let s = Double(i) / Double(steps)
+                    let p = spine(s)
+                    let n = normal(s)
+                    let w = width(s)
+                    left.append(NSPoint(x: p.x + n.x * w, y: p.y + n.y * w))
+                    right.append(NSPoint(x: p.x - n.x * w, y: p.y - n.y * w))
+                }
                 let path = NSBezierPath()
-                path.move(to: .zero)
-                path.curve(
-                    to: NSPoint(x: 0, y: length),
-                    controlPoint1: NSPoint(x: -width, y: length * 0.30),
-                    controlPoint2: NSPoint(x: -width * 0.85, y: length * 0.75)
-                )
-                path.curve(
-                    to: .zero,
-                    controlPoint1: NSPoint(x: width * 0.85, y: length * 0.75),
-                    controlPoint2: NSPoint(x: width, y: length * 0.30)
-                )
+                path.move(to: left[0])
+                for p in left.dropFirst() { path.line(to: p) }
+                for p in right.reversed() { path.line(to: p) }
                 path.close()
-                var transform = AffineTransform.identity
-                transform.translate(x: base.x, y: base.y)
-                transform.rotate(byDegrees: angle)
-                path.transform(using: transform)
-                NSColor.black.withAlphaComponent(i == petals / 2 ? 1.0 : 0.8).setFill()
-                path.fill()
+                path.lineWidth = 1.1
+                path.lineJoinStyle = .round
+                NSColor.black.setStroke()
+                path.stroke()
             }
             return true
         }

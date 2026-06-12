@@ -29,6 +29,7 @@ struct UsageSnapshot: Decodable {
 
 enum UsageFetchError: Error {
     case unauthorized
+    case rateLimited
     case badResponse
 }
 
@@ -42,6 +43,7 @@ enum UsageFetcher {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw UsageFetchError.badResponse }
         if http.statusCode == 401 { throw UsageFetchError.unauthorized }
+        if http.statusCode == 429 { throw UsageFetchError.rateLimited }
         guard http.statusCode == 200 else { throw UsageFetchError.badResponse }
         return try makeDecoder().decode(UsageSnapshot.self, from: data)
     }
@@ -175,7 +177,7 @@ final class UsageModel {
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
-                await self.refresh()
+                await self.refresh(force: true)
                 try? await Task.sleep(for: .seconds(60))
             }
         }
@@ -201,7 +203,12 @@ final class UsageModel {
         ))
     }
 
-    func refresh() async {
+    /// Panel-open refreshes are throttled (the countdown stays correct
+    /// without refetching — resets_at is a fixed timestamp); the poll
+    /// loop forces. Keeps the endpoint from rate-limiting us when the
+    /// panel is opened many times in a row.
+    func refresh(force: Bool = false) async {
+        if !force, let last = lastUpdated, Date().timeIntervalSince(last) < 45 { return }
         let credentials = await Task.detached { KeychainReader.read() }.value
         guard let credentials else {
             settle(.resting(.noToken))
@@ -216,6 +223,8 @@ final class UsageModel {
             settle(.blooming(snapshot))
         } catch UsageFetchError.unauthorized {
             settle(.resting(.tokenExpired))
+        } catch UsageFetchError.rateLimited {
+            // We asked too often; what we have is still true. Stay calm.
         } catch is DecodingError {
             registerFailure(.apiChanged)
         } catch {
@@ -230,10 +239,13 @@ final class UsageModel {
         onUpdate?()
     }
 
-    /// Keep the last bloom through one transient hiccup; rest after two.
+    /// The countdown stays valid without the network, so a bloom survives
+    /// ~8 minutes of failed polls before the lotus rests. Without data to
+    /// hold on to, rest after two.
     private func registerFailure(_ reason: RestReason) {
         consecutiveFailures += 1
-        if consecutiveFailures >= 2 || !isBlooming {
+        let patience = isBlooming ? 8 : 2
+        if consecutiveFailures >= patience {
             state = .resting(reason)
             onUpdate?()
         }

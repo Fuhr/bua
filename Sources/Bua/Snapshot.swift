@@ -24,10 +24,38 @@ enum Snapshot {
             }
             let resting = UsageModel()
             resting.previewResting()
-            resting.quote = Quote(text: "The garden grows while you sleep.", attribution: nil)
+            // Long fixture: verifies a 5-line quote fits without truncation
+            resting.quote = Quote(
+                text: "Happiness lies in making others happy, in forsaking self-interest to bring joy to others. If each one would do that, then everyone would be happy; and all would be taken care of.",
+                attribution: "Paramahansa Yogananda"
+            )
             rendered.append(write(model: resting, dark: dark, name: "bua-\(dark ? "dark" : "light")-resting", to: dir))
         }
+        rendered.append(contentsOf: writeGlyphs(to: dir))
         print(rendered.joined(separator: "\n"))
+    }
+
+    /// The 18px menu-bar glyph, drawn 4× for review.
+    private static func writeGlyphs(to dir: URL) -> [String] {
+        var written: [String] = []
+        for openness in [1.0, 0.5, 0.0] {
+            let glyph = StatusController.glyph(openness: openness)
+            let big = NSImage(size: NSSize(width: 90, height: 90), flipped: false) { rect in
+                NSColor.white.setFill()
+                rect.fill()
+                glyph.draw(in: NSRect(x: 9, y: 9, width: 72, height: 72))
+                return true
+            }
+            let name = String(format: "bua-glyph-%03d", Int(openness * 100))
+            let url = dir.appendingPathComponent("\(name).png")
+            if let tiff = big.tiffRepresentation,
+               let rep = NSBitmapImageRep(data: tiff),
+               let png = rep.representation(using: .png, properties: [:]) {
+                try? png.write(to: url)
+                written.append(url.path)
+            }
+        }
+        return written
     }
 
     private static func write(model: UsageModel, dark: Bool, name: String, to dir: URL) -> String {

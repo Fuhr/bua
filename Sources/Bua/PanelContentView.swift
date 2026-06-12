@@ -20,15 +20,17 @@ struct PanelContentView: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    static let size = CGSize(width: 240, height: 340)
+    static let size = CGSize(width: 240, height: 370)
 
     var body: some View {
         let palette = Theme.palette(for: scheme)
 
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             lotus
-                .padding(.top, 14)
+                .padding(.top, 12)
             countdown(palette)
+            // Fixed-height slot so the layout never jumps when the bars
+            // have nothing to say (resting / still loading)
             VStack(spacing: 7) {
                 if model.isBlooming || model.demoOverride != nil {
                     limitRow("session", value: model.sessionUtilization, fill: sessionFill, palette)
@@ -38,13 +40,15 @@ struct PanelContentView: View {
                         .help(model.weeklyDetail)
                 }
             }
+            .frame(height: 38)
             if model.demoMode {
                 demoSlider(palette)
             }
-            Spacer(minLength: 4)
+            Spacer(minLength: 2)
             quoteView(palette)
+                .frame(maxHeight: 96)
         }
-        .padding(.bottom, 16)
+        .padding(.bottom, 14)
         .frame(width: Self.size.width, height: Self.size.height)
         .background {
             if offscreenChrome {
@@ -182,12 +186,12 @@ struct PanelContentView: View {
     private func quoteView(_ palette: Theme.Palette) -> some View {
         VStack(spacing: 3) {
             Text(model.quote.text)
-                .font(.system(size: 11.5))
+                .font(.system(size: 11))
                 .italic()
                 .foregroundStyle(palette.textSecondary)
                 .multilineTextAlignment(.center)
-                .lineLimit(4)
-                .minimumScaleFactor(0.9)
+                .lineLimit(6)
+                .minimumScaleFactor(0.8)
             if let attribution = model.quote.attribution {
                 Text("— " + attribution)
                     .font(.system(size: 10))

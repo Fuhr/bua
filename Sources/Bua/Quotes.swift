@@ -14,7 +14,15 @@ struct Quote: Equatable {
 /// with `#` are comments. Quotes longer than `panelLimit` characters stay
 /// in the file but don't rotate into the panel.
 enum Quotes {
-    static let panelLimit = 220
+    /// A quote rotates into the panel only if it fits ~5 rendered lines
+    /// (estimated from explicit line breaks plus wrap length: ~36 chars
+    /// per line at 11pt in the panel's width).
+    static func fitsPanel(_ quote: Quote) -> Bool {
+        let estimatedLines = quote.text
+            .components(separatedBy: "\n")
+            .reduce(0) { $0 + max(1, Int(ceil(Double($1.count) / 36.0))) }
+        return estimatedLines <= 5
+    }
 
     static let starter: [Quote] = [
         Quote(text: "Dream big, act quick, start small, be kind.", attribution: "Søren Fuhr"),
@@ -66,7 +74,7 @@ enum Quotes {
 
     static func random() -> Quote {
         let all = load()
-        let fitting = all.filter { $0.text.count <= panelLimit }
+        let fitting = all.filter(fitsPanel)
         return (fitting.isEmpty ? all : fitting).randomElement() ?? starter[0]
     }
 
