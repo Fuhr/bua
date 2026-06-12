@@ -75,6 +75,7 @@ struct LotusView: View, @preconcurrency Animatable {
     var t: Double
     var resting: Bool
     var breathPhase: Double
+    @Environment(\.colorScheme) private var scheme
 
     var animatableData: Double {
         get { t }
@@ -100,8 +101,20 @@ struct LotusView: View, @preconcurrency Animatable {
         PetalSpec(angle: 0, length: 52, ring: 1),
     ]
 
-    private static let canvasSize = CGSize(width: 180, height: 150)
-    private static let basePoint = CGPoint(x: 90, y: 142)
+    private static let canvasSize = CGSize(width: 180, height: 152)
+    private static let basePoint = CGPoint(x: 90, y: 116)
+
+    /// Where the flower meets the water, as a unit point of the canvas —
+    /// breathing scales around it, the reflection mirrors across it.
+    private static var waterline: UnitPoint {
+        UnitPoint(x: basePoint.x / canvasSize.width, y: basePoint.y / canvasSize.height)
+    }
+
+    private var waterColor: OKLCH {
+        scheme == .dark
+            ? OKLCH(l: 0.30, c: 0.045, h: 230)
+            : OKLCH(l: 0.93, c: 0.030, h: 195)   // sunlit: luminous, faintly sky-green
+    }
 
     var body: some View {
         let journey = resting ? ColorJourney.resting : ColorJourney.at(t)
@@ -110,10 +123,14 @@ struct LotusView: View, @preconcurrency Animatable {
 
         ZStack {
             // Soft glow breathing behind the flower
+            // The light itself dims as the session closes toward night
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [journey.color.opacity(0.26 + 0.13 * breath), .clear],
+                        colors: [
+                            journey.color.opacity((0.26 + 0.13 * breath) * (1 - 0.35 * closure)),
+                            .clear,
+                        ],
                         center: .center,
                         startRadius: 4,
                         endRadius: 82 + 5 * breath
@@ -121,16 +138,75 @@ struct LotusView: View, @preconcurrency Animatable {
                 )
                 .frame(width: 175, height: 175)
                 .position(x: Self.basePoint.x, y: Self.basePoint.y - 55)
+                .zIndex(-3)
 
-            // Back ring first; within a ring, outer petals first so the
-            // center petal sits on top — the classic icon layering.
+            // The pond: a still water plane, slow ripples on the breath,
+            // and the flower's hushed reflection
+            water
+                .zIndex(-2)
+            flower(journey: journey, closure: closure)
+                .scaleEffect(x: 1, y: -0.38, anchor: Self.waterline)
+                .opacity(scheme == .dark ? 0.13 : 0.17)
+                .blur(radius: 1.5)
+                .mask(
+                    LinearGradient(
+                        stops: [
+                            .init(color: .black, location: Self.waterline.y),
+                            .init(color: .clear, location: 1.0),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .zIndex(-1)
+
+            flower(journey: journey, closure: closure)
+        }
+        .frame(width: Self.canvasSize.width, height: Self.canvasSize.height)
+        .scaleEffect(1 + 0.03 * breath, anchor: Self.waterline)
+    }
+
+    private func flower(journey: OKLCH, closure: Double) -> some View {
+        // Back ring first; within a ring, outer petals first so the
+        // center petal sits on top — the classic icon layering.
+        ZStack {
             ForEach(Array(Self.petals.enumerated()), id: \.offset) { _, spec in
                 petal(spec, journey: journey, closure: closure)
                     .zIndex(Double(spec.ring) * 100 + (90 - abs(spec.angle)))
             }
         }
-        .frame(width: Self.canvasSize.width, height: Self.canvasSize.height)
-        .scaleEffect(1 + 0.03 * breath, anchor: .bottom)
+    }
+
+    private var water: some View {
+        // Ripples drift outward on the breath cycle; still air when
+        // motion is reduced (breathPhase 0)
+        let cycle = breathPhase == 0
+            ? 0.35
+            : (breathPhase / (2 * .pi)).truncatingRemainder(dividingBy: 1)
+
+        return ZStack {
+            Ellipse()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            waterColor.color.opacity(scheme == .dark ? 0.40 : 0.30),
+                            waterColor.color.opacity(0.04),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: 158, height: 18)
+                .blur(radius: 1.2)   // melt the surface into the chrome
+            ForEach(0..<2, id: \.self) { i in
+                let p = (cycle + Double(i) * 0.5).truncatingRemainder(dividingBy: 1)
+                let w = 44 + 108 * p
+                Ellipse()
+                    .strokeBorder(waterColor.color.opacity(0.30 * (1 - p)), lineWidth: 1)
+                    .frame(width: w, height: w * 0.13)
+            }
+        }
+        .position(x: Self.basePoint.x, y: Self.basePoint.y + 7)
     }
 
     @ViewBuilder

@@ -51,13 +51,14 @@ struct PanelContentView: View {
         .padding(.bottom, 14)
         .frame(width: Self.size.width, height: Self.size.height)
         .background {
-            if offscreenChrome {
-                (scheme == .dark ? OKLCH(l: 0.16, c: 0.008, h: 80) : OKLCH(l: 0.975, c: 0.008, h: 85)).color
-            } else {
-                ZStack {
+            ZStack {
+                if offscreenChrome {
+                    (scheme == .dark ? OKLCH(l: 0.16, c: 0.008, h: 80) : OKLCH(l: 0.975, c: 0.008, h: 85)).color
+                } else {
                     VisualEffectBackground()
                     palette.panelTint
                 }
+                atmosphere
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -73,6 +74,18 @@ struct PanelContentView: View {
     private var sessionFill: Color {
         (model.isResting ? ColorJourney.resting : ColorJourney.at(model.sessionUtilization))
             .color.opacity(0.9)
+    }
+
+    /// A whisper of sky: warm morning light from above in light mode,
+    /// deep indigo night in dark — gone by mid-panel.
+    private var atmosphere: some View {
+        LinearGradient(
+            colors: scheme == .dark
+                ? [OKLCH(l: 0.17, c: 0.030, h: 280).color.opacity(0.55), .clear]
+                : [OKLCH(l: 0.96, c: 0.030, h: 95).color.opacity(0.60), .clear],
+            startPoint: .top,
+            endPoint: UnitPoint(x: 0.5, y: 0.55)
+        )
     }
 
     // MARK: Lotus + breathing
@@ -125,7 +138,8 @@ struct PanelContentView: View {
         if let reason = model.restReason { return reason.caption }
         guard let resetsAt = model.sessionResetsAt else { return "listening for the garden" }
         if resetsAt.timeIntervalSinceNow <= 0 { return "a fresh session has begun" }
-        return "resets " + resetsAt.formatted(date: .omitted, time: .shortened)
+        // Name the garden — someday Bua may watch more than one
+        return "claude session · resets " + resetsAt.formatted(date: .omitted, time: .shortened)
     }
 
     private static func remainingString(_ interval: TimeInterval) -> String {
