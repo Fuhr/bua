@@ -102,7 +102,7 @@ final class UsageModel {
     var panelVisible = false
     var panelPinned = false
 
-    /// Demo mode: ⌥ toggles it while the panel is open; the slider scrubs the day.
+    /// Demo mode: toggled from the right-click menu; the slider scrubs the day.
     var demoMode = false {
         didSet { demoOverride = demoMode ? (liveSessionUtilization ?? 0.3) : nil }
     }
@@ -146,6 +146,18 @@ final class UsageModel {
         demoOverride ?? liveSessionUtilization ?? 0.45
     }
 
+    /// How far in `t` the lotus eases its bloom out so the second half can curve hard.
+    /// 1 = linear; higher = the flower lingers open longer. The bars/countdown stay
+    /// truthful — only the petals, glyph, and journey-tint read through this curve.
+    static let bloomEase = 2.2
+
+    /// Eased closure driving the *visuals* (petals, menu-bar glyph, journey color).
+    /// The flower stays open through the first half of the session, then folds
+    /// faster toward the end — `sessionUtilization` itself remains the honest number.
+    var visualClosure: Double {
+        pow(sessionUtilization, Self.bloomEase)
+    }
+
     var sessionResetsAt: Date? {
         if case .blooming(let snap) = state { return snap.fiveHour?.resetsAt }
         return nil
@@ -155,6 +167,11 @@ final class UsageModel {
         if case .blooming(let snap) = state, let u = snap.sevenDay?.utilization {
             return min(max(u / 100, 0), 1)
         }
+        return nil
+    }
+
+    var weeklyResetsAt: Date? {
+        if case .blooming(let snap) = state { return snap.sevenDay?.resetsAt }
         return nil
     }
 

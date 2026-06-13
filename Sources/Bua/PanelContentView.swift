@@ -20,7 +20,7 @@ struct PanelContentView: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    static let size = CGSize(width: 240, height: 370)
+    static let size = CGSize(width: 240, height: 388)
 
     var body: some View {
         let palette = Theme.palette(for: scheme)
@@ -31,7 +31,7 @@ struct PanelContentView: View {
             countdown(palette)
             // Fixed-height slot so the layout never jumps when the bars
             // have nothing to say (resting / still loading)
-            VStack(spacing: 7) {
+            VStack(spacing: 6) {
                 if model.isBlooming || model.demoOverride != nil {
                     limitRow("session", value: model.sessionUtilization, fill: sessionFill, palette)
                 }
@@ -39,8 +39,14 @@ struct PanelContentView: View {
                     limitRow("week", value: weekly, fill: palette.textSecondary.opacity(0.85), palette)
                         .help(model.weeklyDetail)
                 }
+                if let weeklyReset = model.weeklyResetsAt {
+                    Text("weekly limit resets " + weeklyReset.formatted(
+                        .dateTime.weekday(.abbreviated).hour().minute()))
+                        .font(.system(size: 10))
+                        .foregroundStyle(palette.textSecondary.opacity(0.8))
+                }
             }
-            .frame(height: 38)
+            .frame(height: 54)
             if model.demoMode {
                 demoSlider(palette)
             }
@@ -72,7 +78,7 @@ struct PanelContentView: View {
     }
 
     private var sessionFill: Color {
-        (model.isResting ? ColorJourney.resting : ColorJourney.at(model.sessionUtilization))
+        (model.isResting ? ColorJourney.resting : ColorJourney.at(model.visualClosure))
             .color.opacity(0.9)
     }
 
@@ -103,8 +109,8 @@ struct PanelContentView: View {
     }
 
     private func lotusBody(breathPhase: Double) -> some View {
-        LotusView(t: model.sessionUtilization, resting: model.isResting, breathPhase: breathPhase)
-            .animation(.spring(duration: 0.8), value: model.sessionUtilization)
+        LotusView(t: model.visualClosure, resting: model.isResting, breathPhase: breathPhase)
+            .animation(.spring(duration: 0.8), value: model.visualClosure)
     }
 
     // MARK: Countdown
@@ -176,7 +182,7 @@ struct PanelContentView: View {
         .padding(.horizontal, 24)
     }
 
-    // MARK: Demo slider (⌥ toggles)
+    // MARK: Demo slider (toggled from the right-click menu)
 
     private func demoSlider(_ palette: Theme.Palette) -> some View {
         VStack(spacing: 2) {
@@ -188,7 +194,7 @@ struct PanelContentView: View {
                 in: 0...1
             )
             .controlSize(.mini)
-            Text("scrub the day · ⌥ to leave")
+            Text("scrub the day · Demo Mode in the menu to leave")
                 .font(.system(size: 9))
                 .foregroundStyle(palette.textSecondary)
         }

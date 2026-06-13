@@ -8,9 +8,6 @@ final class StatusController: NSObject {
     private let model = UsageModel()
     private var panel: LotusPanel?
     private var clickAwayMonitor: Any?
-    private var flagsMonitorLocal: Any?
-    private var flagsMonitorGlobal: Any?
-    private var optionWasDown = false
     private var moveObserver: NSObjectProtocol?
     private var suppressMoveTracking = false
     private var hotKey: HotKey?
@@ -264,39 +261,17 @@ final class StatusController: NSObject {
                 self.hidePanel()
             }
         }
-        flagsMonitorLocal = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-            let flags = event.modifierFlags
-            MainActor.assumeIsolated { self?.handleFlags(flags) }
-            return event
-        }
-        flagsMonitorGlobal = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-            let flags = event.modifierFlags
-            Task { @MainActor [weak self] in self?.handleFlags(flags) }
-        }
     }
 
     private func removeMonitors() {
-        for monitor in [clickAwayMonitor, flagsMonitorLocal, flagsMonitorGlobal] {
-            if let monitor { NSEvent.removeMonitor(monitor) }
-        }
+        if let clickAwayMonitor { NSEvent.removeMonitor(clickAwayMonitor) }
         clickAwayMonitor = nil
-        flagsMonitorLocal = nil
-        flagsMonitorGlobal = nil
-        optionWasDown = false
-    }
-
-    private func handleFlags(_ flags: NSEvent.ModifierFlags) {
-        let down = flags.contains(.option)
-        if down && !optionWasDown {
-            model.demoMode.toggle()
-        }
-        optionWasDown = down
     }
 
     // MARK: Status-bar glyph
 
     private func refreshGlyph() {
-        let openness = model.isResting ? 0.5 : 1 - model.sessionUtilization
+        let openness = model.isResting ? 0.5 : 1 - model.visualClosure
         statusItem.button?.image = Self.glyph(openness: openness)
     }
 
