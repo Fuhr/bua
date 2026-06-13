@@ -12,6 +12,8 @@
 	<string>Bua</string>
 	<key>CFBundleExecutable</key>
 	<string>Bua</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>

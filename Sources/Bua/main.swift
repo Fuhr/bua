@@ -8,6 +8,14 @@ if let flagIndex = CommandLine.arguments.firstIndex(of: "--snapshot") {
     exit(0)
 }
 
+if let flagIndex = CommandLine.arguments.firstIndex(of: "--icon") {
+    let path = CommandLine.arguments.indices.contains(flagIndex + 1)
+        ? CommandLine.arguments[flagIndex + 1]
+        : "/tmp/bua-icon.png"
+    Icon.run(outputPath: path)
+    exit(0)
+}
+
 if CommandLine.arguments.contains("--probe") {
     let semaphore = DispatchSemaphore(value: 0)
     Task.detached {
