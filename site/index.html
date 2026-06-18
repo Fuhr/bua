@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bua · บัว — a tiny lotus for your menu bar</title>
+<style>
+  :root {
+    /* Lifted from the app (Theme.swift / ColorJourney.swift) */
+    --sage:        oklch(0.62 0.20 145);
+    --ink:         oklch(0.16 0.005 85);
+    --ink-soft:    oklch(0.43 0.012 85);
+    --ink-faint:   oklch(0.43 0.012 85 / 0.62);
+    --panel:       oklch(0.985 0.005 85 / 0.72);
+    --panel-solid: oklch(0.985 0.005 85);
+    --hairline:    oklch(0.16 0.005 85 / 0.09);
+    --night-text:  oklch(0.96 0.012 85 / 0.80);
+
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 40px;
+    --space-2xl: 72px;
+    --radius: 24px;
+
+    --display: ui-rounded, "SF Pro Rounded", "SF Pro Display", -apple-system,
+               system-ui, BlinkMacSystemFont, sans-serif;
+    --body: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+    /* Driven by scroll, set in JS */
+    --sky-top: oklch(0.96 0.030 95);
+    --sky-bottom: oklch(0.985 0.005 85);
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: var(--body);
+    color: var(--ink);
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100%;
+  }
+
+  /* The sky: a single plane behind everything that travels dawn → night */
+  .sky {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-bottom) 62%);
+  }
+  #reflection { filter: blur(0.6px); }
+
+  /* The lotus stage: fixed in the upper-middle, persistent across the scroll */
+  .stage {
+    position: fixed;
+    top: 4vh;
+    left: 0;
+    right: 0;
+    z-index: -1;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .stage svg {
+    width: min(360px, 78vw);
+    height: auto;
+    overflow: visible;
+  }
+
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0 var(--space-lg);
+  }
+
+  /* Hero — wordmark sits low so the lotus floats above it */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    text-align: center;
+    padding-bottom: 11vh;
+  }
+  .wordmark {
+    font-family: var(--display);
+    font-size: clamp(40px, 9vw, 60px);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+    color: var(--ink);
+  }
+  .wordmark .thai { font-weight: 400; opacity: 0.55; margin-left: 0.15em; }
+  .tagline {
+    font-size: clamp(16px, 2.4vw, 19px);
+    color: var(--ink-soft);
+    max-width: 30ch;
+    margin: var(--space-md) auto 0;
+    text-wrap: balance;
+  }
+  .scroll-hint {
+    margin-top: var(--space-xl);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .scroll-hint .arrow { animation: drift 2.8s ease-in-out infinite; }
+  @keyframes drift {
+    0%, 100% { transform: translateY(0); opacity: 0.5; }
+    50%      { transform: translateY(5px); opacity: 1; }
+  }
+
+  /* Frosted panels — the app's panel, floating on the sky at any hour */
+  .card {
+    background: var(--panel);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius);
+    padding: var(--space-xl);
+    margin: 0 auto var(--space-2xl);
+    box-shadow: 0 18px 50px -28px oklch(0.16 0.02 280 / 0.55);
+  }
+  section.card:first-of-type { margin-top: 4vh; }
+
+  .eyebrow {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sage);
+    margin: 0 0 var(--space-md);
+  }
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(26px, 5vw, 34px);
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+    margin: 0 0 var(--space-md);
+    text-wrap: balance;
+  }
+  .lede {
+    font-size: 18px;
+    color: var(--ink-soft);
+    margin: 0;
+    text-wrap: pretty;
+  }
+  .whisper { font-style: italic; color: var(--ink-soft); }
+  p + p { margin-top: var(--space-md); }
+
+  /* The reframe — the heart */
+  .reframe h2 { font-size: clamp(32px, 7vw, 46px); }
+  .ribbon {
+    height: 10px;
+    border-radius: 999px;
+    margin: var(--space-lg) 0 var(--space-sm);
+    background: linear-gradient(90deg,
+      oklch(0.62 0.20 145), oklch(0.60 0.14 175), oklch(0.70 0.16 350),
+      oklch(0.66 0.15 55), oklch(0.45 0.10 300));
+  }
+  .ribbon-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+  }
+
+  /* "What it is" — a quiet feature list, no icons-as-decoration */
+  .lines { margin: var(--space-lg) 0 0; padding: 0; list-style: none; }
+  .lines li {
+    padding: var(--space-md) 0;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    gap: var(--space-md);
+    align-items: baseline;
+  }
+  .lines li:first-child { border-top: none; padding-top: 0; }
+  .lines .k {
+    font-family: var(--display);
+    font-weight: 600;
+    color: var(--ink);
+    flex: 0 0 7.5em;
+  }
+  .lines .v { color: var(--ink-soft); }
+  kbd {
+    font-family: var(--display);
+    font-size: 0.9em;
+    background: oklch(0.16 0.005 85 / 0.06);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 1px 6px;
+    white-space: nowrap;
+  }
+
+  /* Install */
+  .reqs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin: var(--space-lg) 0;
+  }
+  .req {
+    font-size: 13px;
+    color: var(--ink-soft);
+    background: oklch(0.62 0.20 145 / 0.10);
+    border: 1px solid oklch(0.62 0.20 145 / 0.22);
+    border-radius: 999px;
+    padding: 5px 12px;
+  }
+  ol.steps { margin: var(--space-md) 0 0; padding-left: 1.3em; }
+  ol.steps li { margin-bottom: var(--space-md); padding-left: 0.3em; }
+  ol.steps li::marker { color: var(--sage); font-family: var(--display); font-weight: 600; }
+  .alt {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--hairline);
+    font-size: 15px;
+    color: var(--ink-soft);
+  }
+  .cmd {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+    background: oklch(0.16 0.005 85 / 0.05);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    overflow-x: auto;
+  }
+  .cmd code { flex: 1; white-space: nowrap; color: var(--ink); }
+  .copy {
+    font-family: var(--display);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sage);
+    background: none;
+    border: 1px solid oklch(0.62 0.20 145 / 0.30);
+    border-radius: 8px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    flex: 0 0 auto;
+  }
+  .copy:hover { background: var(--sage); color: oklch(0.99 0 0); }
+  .copy:active { transform: translateY(1px); }
+  .note { font-size: 13px; color: var(--ink-faint); margin-top: var(--space-lg); }
+
+  /* Footer — twilight */
+  footer {
+    text-align: center;
+    padding: 8vh 0 12vh;
+    color: var(--night-text);
+  }
+  footer .mark {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 20px;
+    color: var(--night-text);
+  }
+  footer .bless { font-style: italic; font-size: 15px; margin-top: 6px; opacity: 0.85; }
+  footer .keys { margin-top: var(--space-lg); font-size: 13px; opacity: 0.7; }
+  footer kbd { background: oklch(0.96 0.012 85 / 0.10); border-color: oklch(0.96 0.012 85 / 0.18); color: var(--night-text); }
+
+  a { color: var(--sage); text-underline-offset: 3px; }
+
+  :focus-visible {
+    outline: 2px solid var(--sage);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .scroll-hint .arrow { animation: none; }
+    .sky { transition: none; }
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: var(--space-lg); }
+    .lines .k { flex-basis: 100%; }
+    .lines li { flex-direction: column; gap: 2px; }
+  }
+</style>
+</head>
+<body>
+  <div class="sky" aria-hidden="true"></div>
+
+  <div class="stage" aria-hidden="true">
+    <!-- Lotus — geometry & color ported from LotusView.swift / ColorJourney.swift.
+         Paths and colors are generated in script; viewBox leaves room for the glow. -->
+    <svg id="lotus" viewBox="-25 -38 230 210" role="img" aria-label="A breathing lotus">
+      <defs>
+        <radialGradient id="glow">
+          <stop id="glowStop" offset="0%" stop-color="oklch(0.62 0.20 145)" stop-opacity="0.30"/>
+          <stop offset="100%" stop-color="oklch(0.62 0.20 145)" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+          <stop id="waterTop" offset="0%" stop-color="oklch(0.93 0.030 195)" stop-opacity="0.30"/>
+          <stop id="waterBot" offset="100%" stop-color="oklch(0.93 0.030 195)" stop-opacity="0.04"/>
+        </linearGradient>
+        <!-- petal gradients grad0..grad7 are created in script -->
+      </defs>
+
+      <g id="breath">
+        <circle id="glowCircle" cx="90" cy="61" r="82" fill="url(#glow)"></circle>
+
+        <ellipse id="waterEllipse" cx="90" cy="123" rx="79" ry="9" fill="url(#water)" opacity="0.9"></ellipse>
+        <g id="ripples"></g>
+
+        <g id="reflection"
+           transform="translate(90,116) scale(1,-0.38) translate(-90,-116)"
+           opacity="0.16"></g>
+
+        <g id="flower"></g>
+      </g>
+    </svg>
+  </div>
+
+  <main>
+    <header class="hero">
+      <h1 class="wordmark">Bua<span class="thai">บัว</span></h1>
+      <p class="tagline">A tiny lotus in your menu bar that breathes with your Claude&nbsp;Code session.</p>
+      <div class="scroll-hint">
+        <span>scroll through a day</span>
+        <span class="arrow" aria-hidden="true">↓</span>
+      </div>
+    </header>
+
+    <section class="card reframe" aria-labelledby="reframe-h">
+      <p class="eyebrow">The whole idea</p>
+      <h2 id="reframe-h">Not failure.<br>Nightfall.</h2>
+      <p class="lede">At the start of a session the lotus is a full open bloom in sage.
+        As you work, the petals gather into a bud and the colour travels through the day —
+        jade, lotus pink, sunset coral — until, at the limit, it&nbsp;rests as a closed bud in
+        twilight purple. Then the session resets, and it&nbsp;blooms again.</p>
+      <div class="ribbon" aria-hidden="true"></div>
+      <div class="ribbon-labels" aria-hidden="true"><span>dawn</span><span>night</span></div>
+    </section>
+
+    <section class="card" aria-labelledby="what-h">
+      <p class="eyebrow">What it is</p>
+      <h2 id="what-h">A small, kind thing.</h2>
+      <p class="lede">Not a dashboard. Just a quiet companion that turns a number you'd
+        rather not watch into something worth glancing at.</p>
+      <ul class="lines">
+        <li><span class="k">Breathes</span><span class="v">a slow 7-second breath, glowing softly behind the bloom</span></li>
+        <li><span class="k">Shows</span><span class="v">how much of your session &amp; weekly limit remains, and when each resets</span></li>
+        <li><span class="k">Greets you</span><span class="v">with a quote each time you open the panel</span></li>
+        <li><span class="k">Appears</span><span class="v">anywhere with <kbd>⌃⌥B</kbd> — no cursor needed</span></li>
+        <li><span class="k">Rests</span><span class="v">if it can't reach the garden — calm, never alarmed</span></li>
+      </ul>
+    </section>
+
+    <section class="card" aria-labelledby="privacy-h">
+      <p class="eyebrow">Privacy</p>
+      <h2 id="privacy-h">It never reads your work.</h2>
+      <p class="lede">Bua reads your Claude&nbsp;Code token <strong>read-only</strong> and sends it to
+        exactly one place — the same usage endpoint Claude&nbsp;Code's own
+        <span class="whisper">/usage</span> screen uses.</p>
+      <p>It never sees your conversations, and never stores or refreshes anything.
+        If anything fails, the lotus simply&nbsp;rests.</p>
+    </section>
+
+    <section class="card" aria-labelledby="install-h">
+      <p class="eyebrow">Get it</p>
+      <h2 id="install-h">Two minutes to bloom.</h2>
+      <p class="lede">Bua is a personal app, shared by a friend — so it isn't signed by Apple.
+        macOS will warn you once; here's the way past it.</p>
+      <div class="reqs">
+        <span class="req">Apple Silicon Mac</span>
+        <span class="req">macOS 15 (Sequoia)+</span>
+        <span class="req">Claude Code, logged in</span>
+      </div>
+      <ol class="steps">
+        <li>Drag <strong>Bua.app</strong> into your Applications folder.</li>
+        <li>Double-click it. macOS says it "can't verify Bua is free of malware" — that's expected. Click <strong>Done</strong>.</li>
+        <li>Open <strong>System&nbsp;Settings → Privacy&nbsp;&amp;&nbsp;Security</strong>, scroll to Security, and click <strong>Open Anyway</strong>. Confirm with Touch&nbsp;ID.</li>
+        <li>Look for the little lotus in your menu bar. You only do this once. 🪷</li>
+      </ol>
+      <div class="alt">
+        <span>Comfortable with Terminal? Skip the warning entirely — paste this:</span>
+        <div class="cmd">
+          <code id="xattr">xattr -dr com.apple.quarantine /Applications/Bua.app</code>
+          <button class="copy" type="button" data-copy="xattr">Copy</button>
+        </div>
+      </div>
+      <p class="note">No Claude Code yet? Bua will still install — the lotus just rests,
+        calmly, until there's a session to watch.</p>
+    </section>
+
+    <footer>
+      <div class="mark">Bua · บัว</div>
+      <div class="bless">a benevolent little thing</div>
+      <div class="keys">Press <kbd>⌃⌥B</kbd> anywhere to peek.</div>
+    </footer>
+  </main>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Lotus geometry & color, ported from LotusView.swift ----
+  const PETALS = [
+    { angle: -68, length: 54, ring: 0 },
+    { angle:  68, length: 54, ring: 0 },
+    { angle: -34, length: 68, ring: 0 },
+    { angle:  34, length: 68, ring: 0 },
+    { angle:   0, length: 80, ring: 0 },
+    { angle: -22, length: 44, ring: 1 },
+    { angle:  22, length: 44, ring: 1 },
+    { angle:   0, length: 52, ring: 1 },
+  ];
+  const BASE = { x: 90, y: 116 };
+  const STEPS = 26;
+
+  const STOPS = [
+    { t: 0.00, l: 0.62, c: 0.20, h: 145 },
+    { t: 0.30, l: 0.60, c: 0.14, h: 175 },
+    { t: 0.55, l: 0.70, c: 0.16, h: 350 },
+    { t: 0.78, l: 0.66, c: 0.15, h: 415 },
+    { t: 1.00, l: 0.45, c: 0.10, h: 300 },
+  ];
+
+  function journeyAt(t) {
+    t = Math.min(1, Math.max(0, t));
+    for (let i = 0; i < STOPS.length - 1; i++) {
+      const a = STOPS[i], b = STOPS[i + 1];
+      if (t <= b.t) {
+        const f = b.t === a.t ? 0 : (t - a.t) / (b.t - a.t);
+        return { l: a.l + (b.l - a.l) * f, c: a.c + (b.c - a.c) * f, h: a.h + (b.h - a.h) * f };
+      }
+    }
+    const last = STOPS[STOPS.length - 1];
+    return { l: last.l, c: last.c, h: last.h };
+  }
+  // OKLCH → sRGB, Björn Ottosson's definition (ported verbatim from ColorJourney.swift)
+  // so the lotus renders identically on any browser, oklch-aware or not.
+  function srgb(o) {
+    const hRad = o.h * Math.PI / 180;
+    const a = o.c * Math.cos(hRad), b = o.c * Math.sin(hRad), L = o.l;
+    const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+    const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+    const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+    const l3 = l_ * l_ * l_, m3 = m_ * m_ * m_, s3 = s_ * s_ * s_;
+    const rl =  4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3;
+    const gl = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3;
+    const bl = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3;
+    const enc = (x) => {
+      x = Math.min(1, Math.max(0, x));
+      return Math.round((x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055) * 255);
+    };
+    return [enc(rl), enc(gl), enc(bl)];
+  }
+  const css = (o) => { const c = srgb(o); return `rgb(${c[0]} ${c[1]} ${c[2]})`; };
+  const lighter = (o, d) => ({ l: Math.min(1, o.l + d), c: o.c, h: o.h });
+  const softer  = (o, d) => ({ l: o.l, c: Math.max(0, o.c - d), h: o.h });
+  const polar = (deg, r) => {
+    const rad = deg * Math.PI / 180;
+    return { dx: Math.sin(rad) * r, dy: -Math.cos(rad) * r };
+  };
+
+  function petalPath(angle, baseTangent, length, halfWidth) {
+    const tipV = polar(angle, length);
+    const tip = { x: BASE.x + tipV.dx, y: BASE.y + tipV.dy };
+    const ctrlV = polar(baseTangent, length * 0.55);
+    const ctrl = { x: BASE.x + ctrlV.dx, y: BASE.y + ctrlV.dy };
+    const spine = (s) => {
+      const u = 1 - s;
+      return { x: u*u*BASE.x + 2*u*s*ctrl.x + s*s*tip.x,
+               y: u*u*BASE.y + 2*u*s*ctrl.y + s*s*tip.y };
+    };
+    const normal = (s) => {
+      const u = 1 - s;
+      let dx = 2*u*(ctrl.x - BASE.x) + 2*s*(tip.x - ctrl.x);
+      let dy = 2*u*(ctrl.y - BASE.y) + 2*s*(tip.y - ctrl.y);
+      const len = Math.max(Math.hypot(dx, dy), 0.001);
+      return { x: -dy / len, y: dx / len };
+    };
+    const width = (s) => halfWidth * Math.pow(Math.sin(Math.PI * Math.pow(s, 0.85)), 0.9);
+    const left = [], right = [];
+    for (let i = 0; i <= STEPS; i++) {
+      const s = i / STEPS, p = spine(s), n = normal(s), w = width(s);
+      left.push([p.x + n.x * w, p.y + n.y * w]);
+      right.push([p.x - n.x * w, p.y - n.y * w]);
+    }
+    let d = `M${left[0][0].toFixed(2)},${left[0][1].toFixed(2)}`;
+    for (let i = 1; i < left.length; i++) d += `L${left[i][0].toFixed(2)},${left[i][1].toFixed(2)}`;
+    for (let i = right.length - 1; i >= 0; i--) d += `L${right[i][0].toFixed(2)},${right[i][1].toFixed(2)}`;
+    return d + "Z";
+  }
+
+  // ---- Build the SVG petal/gradient nodes once ----
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const defs = document.querySelector("#lotus defs");
+  const flower = document.getElementById("flower");
+  const reflection = document.getElementById("reflection");
+  const ripplesG = document.getElementById("ripples");
+
+  const petalNodes = PETALS.map((spec, i) => {
+    const grad = document.createElementNS(SVGNS, "linearGradient");
+    grad.id = "grad" + i;
+    grad.setAttribute("gradientUnits", "userSpaceOnUse");
+    const s0 = document.createElementNS(SVGNS, "stop"); s0.setAttribute("offset", "0%");
+    const s1 = document.createElementNS(SVGNS, "stop"); s1.setAttribute("offset", "100%");
+    grad.append(s0, s1);
+    defs.appendChild(grad);
+
+    const path = document.createElementNS(SVGNS, "path");
+    path.setAttribute("fill", "url(#grad" + i + ")");
+    path.setAttribute("stroke-width", "1");
+    const refl = document.createElementNS(SVGNS, "path");
+
+    // draw order: back ring first; within a ring, outer petals first
+    const z = spec.ring * 100 + (90 - Math.abs(spec.angle));
+    return { spec, path, refl, grad, s0, s1, z };
+  });
+  petalNodes.slice().sort((a, b) => a.z - b.z).forEach((n) => {
+    flower.appendChild(n.path);
+    reflection.appendChild(n.refl);
+  });
+
+  const ripples = [0, 1].map(() => {
+    const e = document.createElementNS(SVGNS, "ellipse");
+    e.setAttribute("cx", "90"); e.setAttribute("cy", "123");
+    e.setAttribute("fill", "none"); e.setAttribute("stroke-width", "1");
+    ripplesG.appendChild(e);
+    return e;
+  });
+
+  const glowCircle = document.getElementById("glowCircle");
+  const glowStop = document.getElementById("glowStop");
+  const waterTop = document.getElementById("waterTop");
+  const waterBot = document.getElementById("waterBot");
+  const breathG = document.getElementById("breath");
+  const sky = document.querySelector(".sky");
+  const root = document.documentElement;
+
+  // ---- Sky lerp (dawn → night) ----
+  const lerp = (a, b, f) => a + (b - a) * f;
+  function lerpOKLCH(a, b, f) {
+    return css({ l: lerp(a[0], b[0], f), c: lerp(a[1], b[1], f), h: lerp(a[2], b[2], f) });
+  }
+  const DAWN_TOP = [0.96, 0.030, 95],  NIGHT_TOP = [0.17, 0.030, 280];
+  const DAWN_BOT = [0.985, 0.005, 85], NIGHT_BOT = [0.10, 0.005, 85];
+  const WATER_DAY = [0.93, 0.030, 195], WATER_NIGHT = [0.30, 0.045, 230];
+
+  // ---- Frame ----
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let scrollP = 0;
+  function readScroll() {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    scrollP = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+  }
+
+  function render(breathPhase) {
+    // closure: lingers open, folds toward the bottom (app's bloomEase feel)
+    const closure = Math.pow(scrollP, 1.4);
+    const journey = journeyAt(closure);
+    const breath = breathPhase === 0 ? 0 : Math.sin(breathPhase);
+
+    // sky + water follow the same day
+    root.style.setProperty("--sky-top", lerpOKLCH(DAWN_TOP, NIGHT_TOP, scrollP));
+    root.style.setProperty("--sky-bottom", lerpOKLCH(DAWN_BOT, NIGHT_BOT, scrollP));
+    const waterCol = lerpOKLCH(WATER_DAY, WATER_NIGHT, scrollP);
+    waterTop.setAttribute("stop-color", waterCol);
+    waterBot.setAttribute("stop-color", waterCol);
+
+    // glow — breathes, dims toward night
+    glowCircle.setAttribute("r", (82 + 5 * breath).toFixed(2));
+    glowStop.setAttribute("stop-color", css(journey));
+    glowStop.setAttribute("stop-opacity", ((0.26 + 0.13 * breath) * (1 - 0.35 * closure)).toFixed(3));
+
+    // breath swell around the waterline
+    const sc = (1 + 0.03 * breath).toFixed(4);
+    breathG.setAttribute("transform",
+      `translate(${BASE.x},${BASE.y}) scale(${sc}) translate(${-BASE.x},${-BASE.y})`);
+
+    // petals
+    for (const n of petalNodes) {
+      const c = n.spec.ring === 0 ? closure
+        : Math.min(1, Math.max(0, (closure - 0.25) / 0.75));
+      const osc = breathPhase === 0 ? 0 : Math.sin(breathPhase - n.spec.ring * 0.65);
+      const angle = n.spec.angle * (1 - 0.93 * c) * (1 + 0.045 * osc);
+      const baseTangent = Math.min(94, Math.max(-94, angle * 1.5));
+      const length = n.spec.length * (1 - 0.13 * c);
+      const halfWidth = length * 0.23 * (1 - 0.25 * c);
+
+      const d = petalPath(angle, baseTangent, length, halfWidth);
+      n.path.setAttribute("d", d);
+      n.refl.setAttribute("d", d);
+
+      const depth = n.spec.ring === 0 ? 0.055 * Math.abs(n.spec.angle) / 62 : 0;
+      const ringColor = n.spec.ring === 0
+        ? { l: Math.max(0, journey.l - depth), c: journey.c, h: journey.h }
+        : softer(lighter(journey, 0.10), 0.02);
+      const pale = softer(lighter(ringColor, 0.13), 0.07);
+      const deep = { l: Math.max(0, ringColor.l - 0.02), c: ringColor.c + 0.01, h: ringColor.h };
+      const outline = { l: Math.max(0, ringColor.l - 0.10), c: ringColor.c, h: ringColor.h };
+
+      // gradient runs base (pale) → tip (deep)
+      const tipV = polar(angle, length);
+      n.grad.setAttribute("x1", BASE.x); n.grad.setAttribute("y1", BASE.y);
+      n.grad.setAttribute("x2", (BASE.x + tipV.dx).toFixed(2));
+      n.grad.setAttribute("y2", (BASE.y + tipV.dy).toFixed(2));
+      n.s0.setAttribute("stop-color", css(pale));
+      n.s1.setAttribute("stop-color", css(deep));
+      n.path.setAttribute("stroke", css(outline));
+      n.path.setAttribute("stroke-opacity", "0.35");
+      n.refl.setAttribute("fill", css(deep));
+    }
+
+    // ripples drift outward on the breath cycle
+    const cycle = breathPhase === 0 ? 0.35
+      : ((breathPhase / (2 * Math.PI)) % 1 + 1) % 1;
+    ripples.forEach((e, i) => {
+      const p = (cycle + i * 0.5) % 1;
+      const w = 44 + 108 * p;
+      e.setAttribute("rx", (w / 2).toFixed(2));
+      e.setAttribute("ry", (w * 0.13 / 2).toFixed(2));
+      e.setAttribute("stroke", lerpOKLCH(WATER_DAY, WATER_NIGHT, scrollP));
+      e.setAttribute("stroke-opacity", (0.30 * (1 - p)).toFixed(3));
+    });
+  }
+
+  // ---- Loop ----
+  let ticking = false;
+  window.addEventListener("scroll", () => {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(() => { readScroll(); if (reduceMotion) render(0); ticking = false; });
+    }
+  }, { passive: true });
+  window.addEventListener("resize", () => { readScroll(); if (reduceMotion) render(0); });
+
+  readScroll();
+  if (reduceMotion) {
+    render(0);
+  } else {
+    const start = performance.now();
+    (function frame(now) {
+      const phase = (now - start) / 1000 / 7 * 2 * Math.PI;
+      render(phase);
+      requestAnimationFrame(frame);
+    })(start);
+  }
+
+  // ---- Copy button ----
+  document.querySelectorAll(".copy").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const text = document.getElementById(btn.dataset.copy).textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        const old = btn.textContent;
+        btn.textContent = "Copied";
+        setTimeout(() => { btn.textContent = old; }, 1600);
+      } catch (e) {
+        const r = document.createRange();
+        r.selectNode(document.getElementById(btn.dataset.copy));
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(r);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

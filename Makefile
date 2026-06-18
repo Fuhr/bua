@@ -42,13 +42,13 @@ install: build
 	cp -R $(APP) /Applications/Bua.app
 	@echo "Installed → /Applications/Bua.app"
 
-# Build a send-ready zip (app + INSTALL.txt) to AirDrop to a friend.
-# Ad-hoc signed, not notarized — INSTALL.txt covers the one-time unblock.
+# Build a send-ready zip (app + welcome/install page) to AirDrop to a friend.
+# Ad-hoc signed, not notarized — the page covers the one-time unblock.
 dist: build
 	rm -rf $(STAGE) $(DISTZIP)
 	mkdir -p $(STAGE)
 	cp -R $(APP) $(STAGE)/Bua.app
-	cp INSTALL.txt $(STAGE)/INSTALL.txt
+	cp site/index.html "$(STAGE)/Welcome to Bua.html"
 	ditto -c -k --sequesterRsrc --keepParent $(STAGE) $(DISTZIP)
 	@echo "Built → $(DISTZIP) — AirDrop this to your friend."
 
