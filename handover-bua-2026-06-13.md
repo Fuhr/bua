@@ -1,6 +1,111 @@
 # Handover — Bua (บัว)
 
-**Context:** Bua is Søren's personal macOS menu-bar companion: a breathing lotus that mirrors the Claude Code session limit — full sage bloom at 0%, folding through jade → pink → coral into a twilight bud at 100%, re-blooming on reset. Session 1 (2026-06-12/13) built it from nothing to a finished v1: live data layer, SVG-faithful lotus on a tranquil pond, Søren's Wise Words quotes, global hotkey, all merged on `main` at `Fuhr/bua` (private). Session 2 (2026-06-13) added the daily-use polish: visible weekly-reset time, menu-only demo, an eased "linger then fold" bloom curve, and an app icon. **Status: in daily use, no open build work. Session-2 commits are on local `main` but not yet pushed to origin.**
+**Context:** Bua is Søren's personal macOS menu-bar companion: a breathing lotus that mirrors the Claude Code session limit — full sage bloom at 0%, folding through jade → pink → coral into a twilight bud at 100%, re-blooming on reset. Session 1 (2026-06-12/13) built it from nothing to a finished v1: live data layer, SVG-faithful lotus on a tranquil pond, Søren's Wise Words quotes, global hotkey, all merged on `main` at `Fuhr/bua` (private). Session 2 (2026-06-13) added the daily-use polish: visible weekly-reset time, menu-only demo, an eased "linger then fold" bloom curve, and an app icon. Session 3 (2026-06-18) made Bua **shareable** — a `make dist`
+zip, an animated welcome/landing page that doubles as the install guide, a README
+refresh, a starter-quotes expansion (8 → 30), and parked the public-release
+decisions. **Status: in daily use; all committed + pushed (`origin/main` =
+`f50909a`). Open: the sleep-on-it public-release decisions in `notes/distribution.md`.**
+
+## Session 3 — 2026-06-18
+
+**Context:** Started from "how do I share Bua with a friend?" → built the whole
+sharing path. (A parallel thread — sharing with a *second* friend who uses Codex,
+not Claude — is parked in `CODEX-SUPPORT.md`.)
+
+### What Got Done
+
+- **Shareable install tooling.** New `make dist` → `build/Bua-install.zip` (ad-hoc
+  `Bua.app` + a welcome page), and `make install` → updates the `/Applications`
+  copy in one step (fixes the diverging-copies pain Session 2 flagged).
+- **Animated welcome/landing page** (`site/index.html`). Concept: *scroll through a
+  day* — the sky travels dawn → indigo-night and the lotus folds from full bloom →
+  twilight bud as you scroll, so you reach "how to install" having felt *not
+  failure, nightfall*. Geometry + colour ported faithfully from `LotusView.swift` /
+  `ColorJourney.swift`; the live lotus colours use the app's **exact OKLCH→sRGB
+  matrix** (ported to JS, emits `rgb()`) so it renders on any browser. Self-contained,
+  offline-safe (no web fonts/CDN), `prefers-reduced-motion` + dark-aware-ish,
+  accessible. Verified headless via Playwright (no JS errors; renders across
+  scroll / theme / reduced-motion).
+- **Ships in the zip** as `Welcome to Bua.html`; **`INSTALL.txt` retired** (the page
+  is now the single source of truth for the install guide).
+- **README** rewritten to match the site's voice + document the new make targets.
+- **Starter quotes 8 → 30** (`Quotes.swift`) — public-safe set only (famous /
+  proverbial + Bua's own voice); personal quotes stay in the local `quotes.txt`.
+- **Pushed Session-2's unpushed commits** + the Session-2 handover narrative (both
+  had been left local).
+- **Parked Codex (OpenAI) provider support** (`CODEX-SUPPORT.md`) and the
+  **public-release reflections** (`notes/distribution.md`, gitignored).
+
+### Key Decisions
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| Landing-page concept | Scroll = the lotus's day (dawn→night), lotus folds toward the install | Makes the app's metaphor the page's spine; faithful, surprising |
+| Live colour rendering | Port the app's exact OKLCH→sRGB matrix to JS, emit `rgb()` | Renders identically on any browser, not just oklch-aware ones |
+| System dark mode | Page does **not** follow it | The dawn→night light journey *is* the concept; system-dark would fight it |
+| Install guide delivery | HTML page in the zip; retire `INSTALL.txt` | One source of truth; a friend opens beauty, not a txt file |
+| Distribution posture | Free + open-source (MIT) brand piece, **not** a paid product | Thin utility on an undocumented endpoint; value = goodwill/trust for benevolent.pm |
+| `notes/distribution.md` | Gitignored | Internal musings must never enter a (future public) repo's history |
+| Quotes in source | Public/famous attributions only | Privacy — friend release is fine, but scrub before any public release |
+
+### Decisions Still Open (sleep-on-it — in `notes/distribution.md`)
+
+| Decision | Options | Blocker |
+|---|---|---|
+| Make `Fuhr/bua` public? | Yes (recommended) / no | Søren's call |
+| Notarize for a clean public download? | Pay $99 Apple Dev + notarize / stay ad-hoc + teach the unblock | $99 + enrollment |
+| Licence | MIT (recommended) / other | — |
+| Tip jar | None / Ko-fi / GitHub Sponsors | — |
+| `benevolent.company/bua` page + download | Host `site/` + link a GitHub Release | that site's stack |
+| Pre-public scrub pass (quotes + personal refs) | — | gated on the public decision |
+
+### Known Watch-outs
+
+- The zip's `.app` is **ad-hoc signed** → on Sequoia the friend must do
+  System Settings → Privacy & Security → **Open Anyway** (the page covers it, plus an
+  `xattr -dr com.apple.quarantine` one-liner). A *public* download really wants
+  notarization, or it looks sketchy.
+- **`notes/distribution.md` is gitignored** — it won't appear in `git status` or on
+  GitHub. Don't expect it in the repo.
+- The page **deliberately ignores system dark mode** (it's its own dawn→night world).
+  A system-dark variant would be new work.
+- **Personal-quote rule:** never put personal / "said only to me" quotes into
+  `Quotes.swift`'s `starter` — they ship in the binary and would go public. Personal
+  quotes live only in the local `quotes.txt`.
+- Playwright verification ran from **benevolent-pm's** `node_modules` (bua has no
+  node) via `NODE_PATH`. The `/tmp/bua-*.png` screenshots + `/tmp/bua-verify.cjs` are
+  throwaway — regenerate if gone.
+- Codex support is **blocked** on capturing what `codex` `/status` requests against
+  `chatgpt.com/backend-api/` — needs a Codex account/machine (see `CODEX-SUPPORT.md`).
+
+### What's Next
+
+- **Unblocked now:** AirDrop `build/Bua-install.zip` to the Claude-Code friend.
+- **Needs Søren:** the sleep-on-it decisions above.
+- **If going public:** pre-flight git-history scan → add MIT `LICENSE` + a "personal
+  toy, no support" note → scrub pass → make repo public → optional `make notarize` →
+  cut a GitHub Release → host `site/` at `benevolent.company/bua`.
+- **Optional:** prune any of the 22 added quotes; a system-dark page variant; the
+  long-form-quote reflection view (pre-existing nice-to-have).
+- **Later:** Codex provider support when an account is available.
+
+### Resume Instructions
+
+1. `cd ~/Developer/bua && git pull` (origin/main = `f50909a`).
+2. Send it: `make dist` → AirDrop `build/Bua-install.zip` (app + `Welcome to Bua.html`).
+3. Update your own copy: `make install`.
+4. Read `notes/distribution.md` (local, gitignored) for the public-release decisions.
+5. Preview the page: `open site/index.html`.
+6. Re-verify headless: `NODE_PATH=~/Developer/benevolent-pm/node_modules node /tmp/bua-verify.cjs` (regenerate the script if it's gone).
+
+### Files Changed
+
+- **New:** `site/index.html`, `CODEX-SUPPORT.md`, `notes/distribution.md` (gitignored).
+- **Modified:** `Makefile` (+`dist`, +`install`), `README.md`, `.gitignore` (+`notes/`),
+  `Sources/Bua/Quotes.swift` (8→30 starters), `handover-bua-2026-06-13.md` (this entry).
+- **Deleted:** `INSTALL.txt` (folded into the welcome page).
+
+*Handover: 2026-06-18, end of session 3*
 
 ## Session 1 — 2026-06-12 → 13
 
