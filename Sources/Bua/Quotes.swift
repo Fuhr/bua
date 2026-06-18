@@ -24,7 +24,12 @@ enum Quotes {
         return estimatedLines <= 5
     }
 
+    /// The set shipped in the binary and shown when there's no local
+    /// `quotes.txt`. PUBLIC-SAFE ONLY — famous attributions, proverbs, and
+    /// Bua's own voice. Personal quotes ("said only to me", named friends,
+    /// intimate) live solely in the local quotes.txt, never here.
     static let starter: [Quote] = [
+        // Bua's own quiet voice
         Quote(text: "Dream big, act quick, start small, be kind.", attribution: "Søren Fuhr"),
         Quote(text: "No mud, no lotus.", attribution: nil),
         Quote(text: "Steady beats panicked.", attribution: nil),
@@ -33,6 +38,40 @@ enum Quotes {
         Quote(text: "The lotus does not hurry, and still it blooms.", attribution: nil),
         Quote(text: "Begin again, softly.", attribution: nil),
         Quote(text: "The garden grows while you sleep.", attribution: nil),
+
+        // Impermanence & letting go
+        Quote(text: "Impermanence is inescapable. Everything vanishes.", attribution: "Buddha"),
+        Quote(text: "Suffering usually relates to wanting things to be different than they are.", attribution: "Allan Lokos"),
+        Quote(text: "I realize there's something incredibly honest about trees in winter, how they're experts at letting things go.", attribution: "Jeffrey McDaniel"),
+        Quote(text: "The usefulness of a pot comes from its emptiness.", attribution: "Lao Tzu"),
+
+        // Calm & presence
+        Quote(text: "Speak only if it improves upon the silence.", attribution: "Gandhi"),
+        Quote(text: "Worrying does not take away tomorrow's troubles, it takes away today's peace.", attribution: nil),
+        Quote(text: "In the beginner's mind there are many possibilities. In the expert's there are few.", attribution: "Suzuki Roshi"),
+        Quote(text: "Care about what other people think and you will always be their prisoner.", attribution: "Lao Tzu"),
+
+        // Kindness & service
+        Quote(text: "If you can help, help. If you can't help, don't hurt.", attribution: "Dalai Lama"),
+        Quote(text: "Work is love made visible.", attribution: "Kahlil Gibran"),
+        Quote(text: "Comparison is the thief of joy.", attribution: "Theodore Roosevelt"),
+        Quote(text: "Experience joy in the happiness of others.", attribution: "David Nichtern"),
+
+        // Courage — not failure, nightfall
+        Quote(text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", attribution: "Winston Churchill"),
+        Quote(text: "Life shrinks or expands in proportion to one's courage.", attribution: "Anaïs Nin"),
+        Quote(text: "If you're not making a mistake, it's a mistake.", attribution: "Miles Davis"),
+        Quote(text: "Be kind to yourself always, even in defeat — especially in defeat!", attribution: nil),
+
+        // Craft & simplicity
+        Quote(text: "Perfection is achieved, not when there is nothing left to add, but when there is nothing left to take away.", attribution: "Antoine de Saint-Exupéry"),
+        Quote(text: "Everything should be made as simple as possible, but not simpler.", attribution: nil),
+        Quote(text: "The essence of strategy is choosing what not to do.", attribution: "Michael Porter"),
+        Quote(text: "If you knew how much work went into it, you wouldn't call it genius.", attribution: "Michelangelo"),
+        Quote(text: "We don't make mistakes. We have happy accidents.", attribution: "Bob Ross"),
+
+        // Beginning
+        Quote(text: "The best time to plant a tree was 20 years ago. The second best time is now.", attribution: "Chinese proverb"),
     ]
 
     static var fileURL: URL {
