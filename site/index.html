@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bua · บัว — a tiny lotus for your menu bar</title>
+<title>Bua · บัว · a tiny lotus for your menu bar</title>
 <style>
   :root {
     /* Lifted from the app (Theme.swift / ColorJourney.swift) */
@@ -58,7 +58,7 @@
   /* The lotus stage: fixed in the upper-middle, persistent across the scroll */
   .stage {
     position: fixed;
-    top: 4vh;
+    top: 12vh;
     left: 0;
     right: 0;
     z-index: -1;
@@ -278,6 +278,8 @@
   }
   footer .bless { font-style: italic; font-size: 15px; margin-top: 6px; opacity: 0.85; }
   footer .keys { margin-top: var(--space-lg); font-size: 13px; opacity: 0.7; }
+  footer .colophon { margin-top: var(--space-xl); font-size: 13px; line-height: 1.8; opacity: 0.72; }
+  footer a { color: var(--night-text); text-underline-offset: 3px; }
   footer kbd { background: oklch(0.96 0.012 85 / 0.10); border-color: oklch(0.96 0.012 85 / 0.18); color: var(--night-text); }
 
   a { color: var(--sage); text-underline-offset: 3px; }
@@ -347,11 +349,13 @@
 
     <section class="card reframe" aria-labelledby="reframe-h">
       <p class="eyebrow">The whole idea</p>
-      <h2 id="reframe-h">Not failure.<br>Nightfall.</h2>
+      <h2 id="reframe-h">The limit isn't a wall.<br>It's nightfall.</h2>
       <p class="lede">At the start of a session the lotus is a full open bloom in sage.
-        As you work, the petals gather into a bud and the colour travels through the day —
-        jade, lotus pink, sunset coral — until, at the limit, it&nbsp;rests as a closed bud in
-        twilight purple. Then the session resets, and it&nbsp;blooms again.</p>
+        As you work, the petals gather into a bud and the colour travels through the day:
+        jade, lotus pink, sunset coral. At the limit it&nbsp;rests, a closed bud in
+        twilight purple.</p>
+      <p>Most tools flash red when you hit a limit. Bua just lets the day close. When your
+        session resets, it&nbsp;blooms again.</p>
       <div class="ribbon" aria-hidden="true"></div>
       <div class="ribbon-labels" aria-hidden="true"><span>dawn</span><span>night</span></div>
     </section>
@@ -365,8 +369,8 @@
         <li><span class="k">Breathes</span><span class="v">a slow 7-second breath, glowing softly behind the bloom</span></li>
         <li><span class="k">Shows</span><span class="v">how much of your session &amp; weekly limit remains, and when each resets</span></li>
         <li><span class="k">Greets you</span><span class="v">with a quote each time you open the panel</span></li>
-        <li><span class="k">Appears</span><span class="v">anywhere with <kbd>⌃⌥B</kbd> — no cursor needed</span></li>
-        <li><span class="k">Rests</span><span class="v">if it can't reach the garden — calm, never alarmed</span></li>
+        <li><span class="k">Appears</span><span class="v">anywhere with <kbd>⌃⌥B</kbd>, no cursor needed</span></li>
+        <li><span class="k">Rests</span><span class="v">if it can't reach the garden, never alarmed</span></li>
       </ul>
     </section>
 
@@ -374,7 +378,7 @@
       <p class="eyebrow">Privacy</p>
       <h2 id="privacy-h">It never reads your work.</h2>
       <p class="lede">Bua reads your Claude&nbsp;Code token <strong>read-only</strong> and sends it to
-        exactly one place — the same usage endpoint Claude&nbsp;Code's own
+        exactly one place: the same usage endpoint Claude&nbsp;Code's own
         <span class="whisper">/usage</span> screen uses.</p>
       <p>It never sees your conversations, and never stores or refreshes anything.
         If anything fails, the lotus simply&nbsp;rests.</p>
@@ -383,7 +387,7 @@
     <section class="card" aria-labelledby="install-h">
       <p class="eyebrow">Get it</p>
       <h2 id="install-h">Two minutes to bloom.</h2>
-      <p class="lede">Bua is a personal app, shared by a friend — so it isn't signed by Apple.
+      <p class="lede">Bua is a personal app, shared by a friend, so it isn't signed by Apple.
         macOS will warn you once; here's the way past it.</p>
       <div class="reqs">
         <span class="req">Apple Silicon Mac</span>
@@ -392,18 +396,18 @@
       </div>
       <ol class="steps">
         <li>Drag <strong>Bua.app</strong> into your Applications folder.</li>
-        <li>Double-click it. macOS says it "can't verify Bua is free of malware" — that's expected. Click <strong>Done</strong>.</li>
+        <li>Double-click it. macOS says it "can't verify Bua is free of malware." That's expected; click <strong>Done</strong>.</li>
         <li>Open <strong>System&nbsp;Settings → Privacy&nbsp;&amp;&nbsp;Security</strong>, scroll to Security, and click <strong>Open Anyway</strong>. Confirm with Touch&nbsp;ID.</li>
         <li>Look for the little lotus in your menu bar. You only do this once. 🪷</li>
       </ol>
       <div class="alt">
-        <span>Comfortable with Terminal? Skip the warning entirely — paste this:</span>
+        <span>Comfortable with Terminal? Skip the warning entirely. Paste this:</span>
         <div class="cmd">
           <code id="xattr">xattr -dr com.apple.quarantine /Applications/Bua.app</code>
           <button class="copy" type="button" data-copy="xattr">Copy</button>
         </div>
       </div>
-      <p class="note">No Claude Code yet? Bua will still install — the lotus just rests,
+      <p class="note">No Claude Code yet? Bua will still install. The lotus just rests,
         calmly, until there's a session to watch.</p>
     </section>
 
@@ -411,6 +415,10 @@
       <div class="mark">Bua · บัว</div>
       <div class="bless">a benevolent little thing</div>
       <div class="keys">Press <kbd>⌃⌥B</kbd> anywhere to peek.</div>
+      <div class="colophon">
+        Made with kindness in Copenhagen.<br>
+        © 2026 <a href="https://benevolent.company">Benevolent</a>. All rights reserved.
+      </div>
     </footer>
   </main>
 
