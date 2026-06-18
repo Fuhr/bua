@@ -1,7 +1,9 @@
 APP = build/Bua.app
 BIN = .build/arm64-apple-macosx/release/Bua
+STAGE = build/Bua
+DISTZIP = build/Bua-install.zip
 
-.PHONY: build run probe icon clean
+.PHONY: build run probe icon clean install dist
 
 build:
 	swift build -c release --arch arm64
@@ -33,6 +35,22 @@ icon:
 run: build
 	@pkill -x Bua 2>/dev/null || true
 	open $(APP)
+
+# Install / update the copy in /Applications (your own daily app).
+install: build
+	rm -rf /Applications/Bua.app
+	cp -R $(APP) /Applications/Bua.app
+	@echo "Installed → /Applications/Bua.app"
+
+# Build a send-ready zip (app + INSTALL.txt) to AirDrop to a friend.
+# Ad-hoc signed, not notarized — INSTALL.txt covers the one-time unblock.
+dist: build
+	rm -rf $(STAGE) $(DISTZIP)
+	mkdir -p $(STAGE)
+	cp -R $(APP) $(STAGE)/Bua.app
+	cp INSTALL.txt $(STAGE)/INSTALL.txt
+	ditto -c -k --sequesterRsrc --keepParent $(STAGE) $(DISTZIP)
+	@echo "Built → $(DISTZIP) — AirDrop this to your friend."
 
 probe:
 	swift build -c release --arch arm64
