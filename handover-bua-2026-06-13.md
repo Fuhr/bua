@@ -4,7 +4,7 @@
 zip, an animated welcome/landing page that doubles as the install guide, a README
 refresh, a starter-quotes expansion (8 → 30), and parked the public-release
 decisions. **Status: in daily use; all committed + pushed (`origin/main` =
-`f50909a`). Open: the sleep-on-it public-release decisions in `notes/distribution.md`.**
+`6f0898e`). Open: the sleep-on-it public-release decisions in `notes/distribution.md`.**
 
 ## Session 3 — 2026-06-18
 
@@ -104,6 +104,24 @@ not Claude — is parked in `CODEX-SUPPORT.md`.)
 - **Modified:** `Makefile` (+`dist`, +`install`), `README.md`, `.gitignore` (+`notes/`),
   `Sources/Bua/Quotes.swift` (8→30 starters), `handover-bua-2026-06-13.md` (this entry).
 - **Deleted:** `INSTALL.txt` (folded into the welcome page).
+
+### Follow-up — copy polish + footer (same day, commit `6f0898e`)
+
+After a live read-through Søren asked for a copy pass:
+
+- **Voice + fact check** of the page copy: 12/12 factual claims verified against the
+  Swift source (zero errors); voice consistent (calm, British spelling, garden
+  metaphors). No dedicated "voice/fact-checker" skill exists — done as a direct review.
+- **Reframe header reworked.** "Not failure. Nightfall." read as cryptic (no subject).
+  Now **"The limit isn't a wall. It's nightfall."**, and per Søren the word *failure*
+  is dropped entirely; the paragraph ends "…Bua just lets the day close. When your
+  session resets, it blooms again."
+- **Em dashes removed** from all visible copy (colons / commas / full stops instead).
+- **Lotus moved down** (`.stage top: 4vh → 12vh`) for a more centred hero.
+- **Company colophon footer added:** "Made with kindness in Copenhagen. © 2026
+  Benevolent (benevolent.company)." **To confirm:** the exact legal entity name, and
+  Copenhagen-vs-CPH.
+- Dist regenerated with the updated `Welcome to Bua.html`.
 
 *Handover: 2026-06-18, end of session 3*
 
