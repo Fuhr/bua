@@ -1,6 +1,6 @@
 # Handover — Bua (บัว)
 
-**Context:** Bua is Søren's personal macOS menu-bar companion: a breathing lotus that mirrors the Claude Code session limit — full sage bloom at 0%, folding through jade → pink → coral into a twilight bud at 100%, re-blooming on reset. Session 1 (2026-06-12/13) built it from nothing to a finished v1: live data layer, SVG-faithful lotus on a tranquil pond, Søren's Wise Words quotes, global hotkey, all merged on `main` at `Fuhr/bua` (private). **Status: in daily use, no open build work.**
+**Context:** Bua is Søren's personal macOS menu-bar companion: a breathing lotus that mirrors the Claude Code session limit — full sage bloom at 0%, folding through jade → pink → coral into a twilight bud at 100%, re-blooming on reset. Session 1 (2026-06-12/13) built it from nothing to a finished v1: live data layer, SVG-faithful lotus on a tranquil pond, Søren's Wise Words quotes, global hotkey, all merged on `main` at `Fuhr/bua` (private). Session 2 (2026-06-13) added the daily-use polish: visible weekly-reset time, menu-only demo, an eased "linger then fold" bloom curve, and an app icon. **Status: in daily use, no open build work. Session-2 commits are on local `main` but not yet pushed to origin.**
 
 ## Session 1 — 2026-06-12 → 13
 
@@ -70,3 +70,41 @@ I've been living with the app — here's my feedback: …
 Entire repo created this session: `Package.swift`, `Makefile`, `README.md`, `.gitignore`, `Resources/Info.plist`, and `Sources/Bua/` — `main`, `StatusController`, `LotusPanel`, `PanelContentView`, `LotusView`, `ColorJourney`, `UsageModel`, `KeychainReader`, `Theme`, `Probe`, `Snapshot`, `Quotes`, `HotKey`, `ShortcutRecorder` (14 Swift files). Outside the repo: `~/Library/Application Support/Bua/quotes.txt` (converted Wise Words collection), Claude session memory file.
 
 *Handover: 2026-06-13, end of session 1*
+
+## Session 2 — 2026-06-13
+
+Living-with-it feedback → four changes, all merged to `main` (commits `e5345ab`, `bd61aad`).
+
+### What Got Done
+
+- **Weekly-limit reset time in the panel.** Was hover-tooltip-only; now a caption under the bars ("weekly limit resets Sat 06:59"). `weeklyResetsAt` exposed on `UsageModel`; bars slot grew 38→54 and the panel 370→388 to fit without clipping (verified against the resting + longest-quote fixture).
+- **Demo mode is menu-only.** Removed the ⌥ flags-monitor toggle from `StatusController` (`handleFlags`/`optionWasDown` + both flags monitors gone). Root cause: the show/hide hotkey is **⌃⌥B**, so its option press was firing the panel's demo toggle every time — show/hide kept flipping demo on. Right-click → Demo Mode still works; slider caption updated.
+- **Eased "linger then fold" bloom.** New `visualClosure = pow(sessionUtilization, bloomEase)` (`bloomEase = 2.2`) drives the petals, the menu-bar glyph, and the session-bar tint. The flower stays open/green through ~the first half, then folds fast pink→coral→twilight in the back third. The % bars and countdown stay truthful (raw `sessionUtilization`).
+- **App icon.** New `Icon.swift` renders the full-bloom lotus — green outer petals cradling a pink inner bloom — on a soft light rounded tile, reusing the panel/glyph petal geometry. `Bua --icon [path]` renders a 1024 master; `make icon` re-slices it into `Resources/AppIcon.icns`. Wired via `CFBundleIconFile` + a build-step copy into `Contents/Resources/`.
+
+### Install Change
+
+- Bua now also lives at **`/Applications/Bua.app`** (Spotlight/Launchpad-openable; it's `LSUIElement` so no Dock icon). `make run` still builds+opens `build/Bua.app`. **The two copies diverge** — `/Applications` is the daily app; to update it: `make build && rm -rf /Applications/Bua.app && cp -R build/Bua.app /Applications/`. (Consider folding an `install` target into the Makefile next session.)
+
+### Tuning Knobs
+
+| Knob | File | Default | Effect |
+|---|---|---|---|
+| `bloomEase` | `UsageModel.swift` | 2.2 | higher = flower lingers open longer before folding |
+| lotus scale `0.70` | `Icon.swift` | 0.70 | icon boldness (fraction of tile the lotus fills) |
+
+### Known Watch-outs (new)
+
+- **Cold start × rate limit.** The undocumented usage endpoint 429s on back-to-back calls. With no cached data, a fresh launch then sits at "listening for the garden" until the 60s poll loop lands a 200 — it self-heals, just stop poking it. **Don't `--probe` right after `make run`** (that double-hit caused a scare this session).
+- **Icon cache.** After changing the icon: `lsregister -f /Applications/Bua.app && killall Dock` to refresh Finder/Spotlight (full refresh may wait for next login).
+
+### What's Next
+
+- **Push** session-2 commits to `origin/main` (not done yet — Søren said "commit", push not requested).
+- Nice-to-haves unchanged: longer-reflection view for the big quotes, Launch-at-Login on by default, diagnostics menu item, a Makefile `install` target.
+
+### Resume (delta from session 1)
+
+- `make icon` regenerates the icon after editing `Icon.swift`; `Bua --icon /tmp/x.png` for a quick master render.
+
+*Handover: 2026-06-13, end of session 2*
